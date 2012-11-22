@@ -24,10 +24,13 @@ int open(const char *fn, int flags, ...) {
         }
     }
 
-    char m[4] = { '\0', '\0', '\0' };
-    m[0] = (flags & O_CREAT) ? 'c' : '_';
-    m[1] = (flags & O_WRONLY) ? 'w' : '_';
-    m[2] = (flags & O_APPEND) ? 'a' : '_';
+    char m[6];
+    m[0] = (flags & O_RDONLY) > 0 ? 'r' : '_';
+    m[1] = (flags & O_WRONLY) > 0 ? 'w' : '_';
+    m[2] = (flags & O_RDWR) > 0   ? '+' : '_';
+    m[3] = (flags & O_CREAT) > 0  ? 'c' : '_';
+    m[4] = (flags & O_APPEND) > 0 ? 'a' : '_';
+    m[5] = '\0';
 
     if (logFP) {
         fprintf(logFP, "opened file '%s' - %s\n", fn, m);
