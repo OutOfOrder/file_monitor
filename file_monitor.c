@@ -7,6 +7,7 @@
 #include <stdarg.h>
 
 static int (*real_open)(const char *fn, int flags, ...);
+static int (*real_open64)(const char *fn, int flags, ...);
 static FILE* (*real_fopen)(const char*__restrict fn, const char*__restrict mode);
 static FILE* (*real_fopen64)(const char*__restrict fn, const char*__restrict mode);
 static short startup = 0;
@@ -59,9 +60,34 @@ int open(const char *fn, int flags, ...)
         va_start(ap, flags);
         mode_t mode = va_arg(ap, mode_t);
         va_end(ap);
-        return real_open(fn, flags);
+        return real_open(fn, flags, mode);
     } else {
         return real_open(fn, flags);
+    }
+}
+
+int open64(const char *fn, int flags, ...)
+{
+    startup_check();
+
+    char m[6];
+    m[0] = (flags & O_RDONLY) > 0 ? 'r' : '_';
+    m[1] = (flags & O_WRONLY) > 0 ? 'w' : '_';
+    m[2] = (flags & O_RDWR) > 0   ? '+' : '_';
+    m[3] = (flags & O_CREAT) > 0  ? 'c' : '_';
+    m[4] = (flags & O_APPEND) > 0 ? 'a' : '_';
+    m[5] = '\0';
+
+    log_open("open64", fn, m);
+
+    if (flags & O_CREAT) {
+        va_list ap;
+        va_start(ap, flags);
+        mode_t mode = va_arg(ap, mode_t);
+        va_end(ap);
+        return real_open64(fn, flags, mode);
+    } else {
+        return real_open64(fn, flags);
     }
 }
 
