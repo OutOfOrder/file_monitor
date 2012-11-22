@@ -1,11 +1,26 @@
 #!/bin/bash
 
 root=`dirname $0`/`basename $0`-libs
-
 if [ "`arch`"="x86_64" ]; then
-    LD_PRELOAD=$root/file_monitor64.so "$@"
+    arch=64
 else
-    LD_PRELOAD=$root/file_monitor32.so "$@"
+    arch=32
 fi
+
+while getopts "a:h" opt; do
+    case $opt in
+        a)
+            arch=$OPTARG
+            ;;
+        h)
+            echo Usage: `basename $0` [-a 32]
+            exit
+            ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+LD_PRELOAD=$root/file_monitor${arch}.so "$@"
 
 # vim: et ts=4
