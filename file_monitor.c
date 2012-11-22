@@ -6,23 +6,43 @@
 #include <fcntl.h>
 #include <stdarg.h>
 
-int open(const char *fn, int flags, ...) {
-    static int (*real_open)(const char *fn, int flags, ...);
-    static int envChecked = 0;
-    static FILE* logFP = NULL;
+static int (*real_open)(const char *fn, int flags, ...);
+static FILE* (*real_fopen)(const char*__restrict fn, const char*__restrict mode);
+static FILE* (*real_fopen64)(const char*__restrict fn, const char*__restrict mode);
+static short startup = 0;
+static FILE* logFP = NULL;
 
-    if (!real_open) {
-        real_open = dlsym(RTLD_NEXT, "open");
+void startup_check()
+{
+    if (startup == 1) {
+        return;
     }
-    
-    if (envChecked == 0) {
-        envChecked = 1;
-        char *logfile = getenv("FILE_MONITOR_LOG");
-        if (logfile) {
-            int logFD = real_open(logfile, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
-            logFP = fdopen(logFD, "w");
-        }
+
+    startup = 1;
+
+    real_open = dlsym(RTLD_NEXT, "open");
+    real_fopen = dlsym(RTLD_NEXT, "fopen");
+    real_fopen64 = dlsym(RTLD_NEXT, "fopen64");
+
+    char *logfile = getenv("FILE_MONITOR_LOG");
+    if (logfile) {
+        int logFD = real_open(logfile, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+        logFP = fdopen(logFD, "w");
     }
+}
+
+void log_open(const char* func, const char* fn, const char* mode)
+{
+    if (logFP) {
+        fprintf(logFP, "opened file %s('%s','%s')\n", func, fn, mode);
+    } else {
+        fprintf(stderr, "opened file %s('%s','%s')\n", func, fn, mode);
+    }
+}
+
+int open(const char *fn, int flags, ...)
+{
+    startup_check();
 
     char m[6];
     m[0] = (flags & O_RDONLY) > 0 ? 'r' : '_';
@@ -32,11 +52,8 @@ int open(const char *fn, int flags, ...) {
     m[4] = (flags & O_APPEND) > 0 ? 'a' : '_';
     m[5] = '\0';
 
-    if (logFP) {
-        fprintf(logFP, "opened file '%s' - %s\n", fn, m);
-    } else {
-        fprintf(stderr, "opened file '%s' - %s\n", fn, m);
-    }
+    log_open("open", fn, m);
+
     if (flags & O_CREAT) {
         va_list ap;
         va_start(ap, flags);
@@ -46,6 +63,24 @@ int open(const char *fn, int flags, ...) {
     } else {
         return real_open(fn, flags);
     }
+}
+
+FILE* fopen(const char* fn, const char* modes)
+{
+    startup_check();
+
+    log_open("fopen", fn, modes);
+
+    return real_fopen(fn, modes);
+}
+
+FILE* fopen64(const char* fn, const char* modes)
+{
+    startup_check();
+
+    log_open("fopen64", fn, modes);
+
+    return real_fopen64(fn, modes);
 }
 
 // vim: et ts=4
