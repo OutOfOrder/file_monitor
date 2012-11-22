@@ -1,0 +1,11 @@
+#!/bin/bash
+
+root=`dirname $0`/`basename $0`-libs
+
+if [ "`arch`"="x86_64" ]; then
+    LD_PRELOAD=$root/file_monitor64.so "$@"
+else
+    LD_PRELOAD=$root/file_monitor32.so "$@"
+fi
+
+# vim: et ts=4
