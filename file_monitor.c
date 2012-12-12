@@ -22,6 +22,7 @@ void startup_check()
     startup = 1;
 
     real_open = dlsym(RTLD_NEXT, "open");
+    real_open64 = dlsym(RTLD_NEXT, "open64");
     real_fopen = dlsym(RTLD_NEXT, "fopen");
     real_fopen64 = dlsym(RTLD_NEXT, "fopen64");
 
