@@ -30,16 +30,14 @@ void startup_check()
     if (logfile) {
         int logFD = real_open(logfile, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
         logFP = fdopen(logFD, "w");
+    } else {
+        logFP = stderr;
     }
 }
 
 void log_open(const char* func, const char* fn, const char* mode)
 {
-    if (logFP) {
-        fprintf(logFP, "opened file %s('%s','%s')\n", func, fn, mode);
-    } else {
-        fprintf(stderr, "opened file %s('%s','%s')\n", func, fn, mode);
-    }
+    fprintf(logFP, "opened file %s('%s','%s')\n", func, fn, mode);
 }
 
 int open(const char *fn, int flags, ...)
