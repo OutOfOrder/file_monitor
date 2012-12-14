@@ -6,20 +6,28 @@ if [ "`arch`"="x86_64" ]; then
 else
     arch=32
 fi
+logfile=
 
-while getopts "a:h" opt; do
+while getopts "a:l:h" opt; do
     case $opt in
         a)
             arch=$OPTARG
             ;;
+        l)
+            logfile=$OPTARG
+            ;;
         h)
-            echo Usage: `basename $0` [-a 32]
+            echo Usage: `basename $0` [-a 32] [-l logfile]
             exit
             ;;
     esac
 done
 
 shift $((OPTIND-1))
+
+if [ ! -z "$logfile" ]; then
+    export FILE_MONITOR_LOG="$logfile"
+fi
 
 LD_PRELOAD=$root/file_monitor${arch}.so "$@"
 
