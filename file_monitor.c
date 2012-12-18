@@ -40,9 +40,9 @@ void startup_check()
     }
 }
 
-void log_open(const char* func, const char* fn, const char* mode)
+void log_open(const char* func, const char* fn, const char* mode, int ret)
 {
-    fprintf(logFP, "opened file %s('%s','%s')\n", func, fn, mode);
+    fprintf(logFP, "opened file %s('%s','%s') == %s\n", func, fn, mode, ret == 0 ? "NO FILE" : "OK");
 }
 
 void log_other(const char* func, const char* fn, const char* extra)
@@ -62,17 +62,21 @@ int open(const char *fn, int flags, ...)
     m[4] = (flags & O_APPEND) > 0 ? 'a' : '_';
     m[5] = '\0';
 
-    log_open("open", fn, m);
+    int ret = -1;
 
     if (flags & O_CREAT) {
         va_list ap;
         va_start(ap, flags);
         mode_t mode = va_arg(ap, mode_t);
         va_end(ap);
-        return real_open(fn, flags, mode);
+        ret = real_open(fn, flags, mode);
     } else {
-        return real_open(fn, flags);
+        ret = real_open(fn, flags);
     }
+
+    log_open("open", fn, m, ret == -1 ? 0 : 1);
+
+    return ret;
 }
 
 int open64(const char *fn, int flags, ...)
@@ -87,35 +91,43 @@ int open64(const char *fn, int flags, ...)
     m[4] = (flags & O_APPEND) > 0 ? 'a' : '_';
     m[5] = '\0';
 
-    log_open("open64", fn, m);
+    int ret = -1;
 
     if (flags & O_CREAT) {
         va_list ap;
         va_start(ap, flags);
         mode_t mode = va_arg(ap, mode_t);
         va_end(ap);
-        return real_open64(fn, flags, mode);
+        ret = real_open64(fn, flags, mode);
     } else {
-        return real_open64(fn, flags);
+        ret = real_open64(fn, flags);
     }
+
+    log_open("open64", fn, m, ret == -1 ? 0 : 1);
+
+    return ret;
 }
 
 FILE* fopen(const char* fn, const char* modes)
 {
     startup_check();
 
-    log_open("fopen", fn, modes);
+    FILE* fp = real_fopen(fn, modes);
 
-    return real_fopen(fn, modes);
+    log_open("fopen", fn, modes, fp == 0 ? 0 : 1);
+
+    return fp;
 }
 
 FILE* fopen64(const char* fn, const char* modes)
 {
     startup_check();
 
-    log_open("fopen64", fn, modes);
+    FILE *fp = real_fopen64(fn, modes);
 
-    return real_fopen64(fn, modes);
+    log_open("fopen64", fn, modes, fp ==0 ? 0 : 1);
+
+    return fp;
 }
 
 int stat(const char* path, struct stat* buf)
